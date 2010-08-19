@@ -1,0 +1,46 @@
+## Process this file with automake to produce Makefile.in
+
+## Created by Anjuta
+
+uidir = $(datadir)/pmdn_dds/ui
+ui_DATA = pmdn_dds.ui \
+	netlistwin.ui
+
+AM_CPPFLAGS = \
+	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
+	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
+	-DPACKAGE_DATA_DIR=\""$(datadir)"\" \
+	$(PMDN_DDS_CFLAGS)
+
+AM_CFLAGS =\
+	 -Wall\
+	 -g
+
+bin_PROGRAMS = pmdn_dds
+
+pmdn_dds_SOURCES = \
+	callbacks.c \
+	callbacks.h \
+	main.c \
+	netlistwin.c
+
+pmdn_dds_LDFLAGS = \
+	-Wl,--export-dynamic
+
+pmdn_dds_LDADD = $(PMDN_DDS_LIBS)
+
+EXTRA_DIST = $(ui_DATA)
+
+lib_LIBRARIES = \
+	libdds.a
+
+libdds_a_SOURCES = \
+	dds.c     \
+	dds.h
+
+PMDN_DDS_LIBS += $(lib_LIBRARIES)
+
+# Remove ui directory on uninstall
+uninstall-local:
+	-rm -r $(uidir)
+	-rm -r $(datadir)/pmdn_dds

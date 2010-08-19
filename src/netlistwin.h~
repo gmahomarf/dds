@@ -1,0 +1,4 @@
+#include <gtk/gtk.h>
+
+GtkWindow* net_list_win_new();
+void agregarNL (GtkToolButton *self, gpointer user_data);
