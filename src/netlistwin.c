@@ -8,7 +8,9 @@ enum
 	NUM_COLS
 };
 
-static GtkListStore *_netList;
+static GtkListStore *_netList = NULL;
+static GtkWidget *_tv = NULL;
+static GtkWidget *window = NULL;
 
 /** Callbacks **/
 
@@ -21,16 +23,28 @@ _destroy(GtkWidget* wid, gpointer user_data)
 	
 
 void
-_agregarNL (GtkToolButton *self, gpointer user_data)
+_agregar (GtkToolButton *self, gpointer user_data)
 {
 	GtkTreeIter iter;
 	
 	gtk_list_store_append(_netList, &iter);
-	gtk_list_store_set(_netList, &iter,
+	/*gtk_list_store_set(_netList, &iter,
 	                   COL_IDSAT, "<id>",
 	                   COL_NOMBRE, "<nombre>",
 	                   COL_DESC, "<desc>",
-	                   -1);
+	                   -1);*/
+}
+
+void
+_quitar (GtkToolButton *self, gpointer user_data)
+{
+	GtkTreeIter iter;
+  	GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW(_tv));
+	
+    if (gtk_tree_selection_get_selected (selection, NULL, &iter))
+	{
+		gtk_list_store_remove (_netList, &iter);
+	}
 }
 
 void 
@@ -145,7 +159,7 @@ GtkWidget* _barraHerramientas()
 	/*** Conectar señal ***/
 	g_signal_connect(toolBtn,
 	                 "clicked",
-	                 G_CALLBACK(_agregarNL),
+	                 G_CALLBACK(_agregar),
 	                 NULL);
 	
 	/* Agregar botón */
@@ -160,11 +174,11 @@ GtkWidget* _barraHerramientas()
 	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
 	                     "Quitar"));
 
-	/*** TODO: Ligar botones de barra de herramientas a respectivas señales ***/
-	/* g_signal_connect(toolBtn,
+	/* Conectar Señal */
+	g_signal_connect(toolBtn,
 	                    "clicked",
-	                    G_CALLBACK(),
-						NULL);*/
+	                    G_CALLBACK(_quitar),
+						NULL);
 	
 	/* Agregar botón */
 	gtk_toolbar_insert(GTK_TOOLBAR(barra),
@@ -299,7 +313,7 @@ GtkWidget* _menuPrincipal()
 GtkWidget* _listaRed()
 {
 	GtkCellRenderer *renderer = NULL;
-	GtkWidget *tv = NULL;
+	//GtkWidget *tv = NULL;
 	
 	/* TreeView y Modelo */
 	_netList = gtk_list_store_new(NUM_COLS,
@@ -307,9 +321,9 @@ GtkWidget* _listaRed()
 	                              GTK_TYPE_STRING,
 	                              GTK_TYPE_STRING,
 	                              GTK_TYPE_BOOL);
-    tv = gtk_tree_view_new_with_model (GTK_TREE_MODEL(_netList));
-	gtk_tree_view_set_headers_clickable (GTK_TREE_VIEW(tv), FALSE);
-	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW(tv),
+    _tv = gtk_tree_view_new_with_model (GTK_TREE_MODEL(_netList));
+	gtk_tree_view_set_headers_clickable (GTK_TREE_VIEW(_tv), FALSE);
+	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW(_tv),
 	                              GTK_TREE_VIEW_GRID_LINES_BOTH);
 
 	/* Columna Id Satelital */
@@ -323,16 +337,16 @@ GtkWidget* _listaRed()
 	                 "edited",
 	                 G_CALLBACK(_cellEdited),
 	                 NULL);
-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (tv), -1,
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (_tv), -1,
 	                                            "Id Satelital", renderer,
 	                                            "text", COL_IDSAT,
 	                                            NULL);
 	gtk_tree_view_column_set_expand(gtk_tree_view_get_column(
-	                                                         GTK_TREE_VIEW(tv),
+	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_IDSAT),
 	                                TRUE);
 	gtk_tree_view_column_set_sizing(gtk_tree_view_get_column(
-	                                                         GTK_TREE_VIEW(tv),
+	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_IDSAT),
 	                                GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	
@@ -347,16 +361,16 @@ GtkWidget* _listaRed()
 	                 "edited",
 	                 G_CALLBACK(_cellEdited),
 	                 NULL);
-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (tv), -1,
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (_tv), -1,
                                                 "Nombre", renderer,
 	                                            "text", COL_NOMBRE,
 	                                            NULL);
 	gtk_tree_view_column_set_expand(gtk_tree_view_get_column(
-	                                                         GTK_TREE_VIEW(tv),
+	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_NOMBRE),
 	                                TRUE);
 	gtk_tree_view_column_set_sizing(gtk_tree_view_get_column(
-	                                                         GTK_TREE_VIEW(tv),
+	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_NOMBRE),
 	                                GTK_TREE_VIEW_COLUMN_AUTOSIZE);	                 
 	
@@ -371,25 +385,24 @@ GtkWidget* _listaRed()
 	                 "edited",
 	                 G_CALLBACK(_cellEdited),
 	                 NULL);
-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (tv), -1,
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (_tv), -1,
                                                 "Descripción", renderer,
 	                                            "text", COL_DESC,
 	                                            NULL);
 	gtk_tree_view_column_set_expand(gtk_tree_view_get_column(
-	                                                         GTK_TREE_VIEW(tv),
+	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_DESC),
 	                                TRUE);
 	gtk_tree_view_column_set_sizing(gtk_tree_view_get_column(
-	                                                         GTK_TREE_VIEW(tv),
+	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_DESC),
 	                                GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 
-	return tv;
+	return _tv;
 }
 
 GtkWidget* net_list_win_new()
 {
-	GtkWidget *window = NULL;
 	GtkWidget *vbox1 = NULL;
 	GtkWidget *sw = NULL;
 
