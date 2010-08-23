@@ -1,6 +1,6 @@
 #include "netlistwin.h"
 
-enum 
+enum cols
 {
 	COL_IDSAT = 0,
 	COL_NOMBRE,
@@ -8,11 +8,116 @@ enum
 	NUM_COLS
 };
 
+enum toolbtns
+{
+	TNUEVO,
+	TABRIR,
+	TGUARDAR,
+	TSEP,
+	TAGREGAR,
+	TQUITAR,
+	TCOUNT
+};
+
 static GtkListStore *_netList = NULL;
 static GtkWidget *_tv = NULL;
 static GtkWidget *window = NULL;
+static GtkWidget *barra = NULL;
+static GtkWidget *menuBar = NULL;
+static GString *file = NULL;
+static gboolean saved = TRUE;
 
 /** Callbacks **/
+
+
+void
+_rowInsEdit(GtkTreeModel *tree_model, GtkTreePath  *path,
+            GtkTreeIter  *iter, gpointer      user_data)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
+	                                                  TGUARDAR)),
+	                         TRUE);
+}
+
+void
+_rowDel(GtkTreeModel *tree_model, GtkTreePath  *path,
+        gpointer      user_data)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
+	                                                  TGUARDAR)),
+	                         TRUE);
+}
+
+void
+_save(GtkToolButton *self, gpointer user_data)
+{
+	GtkWidget *dlg = NULL;
+	GFile *nl = NULL;
+	GFileOutputStream *strm = NULL;
+	GList *l = NULL;
+	GtkTreeIter iter;
+	gchar *satid = NULL, *nom = NULL, *desc = NULL;
+	GString *out = NULL;
+	GError *err = NULL;
+
+	if (saved) return;
+	if (!file) {
+		dlg = gtk_file_chooser_dialog_new("Guardar Lista de Red",
+			                              GTK_WINDOW(window),
+			                              GTK_FILE_CHOOSER_ACTION_SAVE,
+			                              "Guardar",
+			                              GTK_RESPONSE_ACCEPT,
+			                              "Cancelar",
+			                              GTK_RESPONSE_CANCEL,
+			                              NULL
+			                              );
+		if(gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
+			/*Save code here*/
+			saved = TRUE;
+			gtk_widget_set_sensitive (GTK_WIDGET(self),
+				                      FALSE);
+			g_string_free(file, TRUE);
+			file = g_string_sized_new (255);
+			g_string_assign (file, 
+			                 gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg)));
+			nl = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dlg));
+		}
+		gtk_widget_destroy (GTK_WIDGET(dlg));
+	} else {
+		gtk_widget_set_sensitive (GTK_WIDGET(self),
+				                      FALSE);
+		nl = g_file_new_for_path (file->str);
+	}
+	strm = g_file_replace (nl, NULL, FALSE,
+	                       G_FILE_CREATE_REPLACE_DESTINATION, NULL, &err);
+
+	gtk_tree_model_get_iter_first (GTK_TREE_MODEL(_netList), &iter);
+	do {
+		if (out) g_string_free(out, TRUE);
+		out = g_string_sized_new (255);
+		gtk_tree_model_get(GTK_TREE_MODEL(_netList),
+		                   &iter,
+		                   COL_IDSAT,
+		                   &satid,
+		                   COL_NOMBRE,
+		                   &nom,
+		                   COL_DESC,
+		                   &desc,
+		                   -1);
+		g_string_printf(out, "%s:%s:%s%c",
+		                satid ? satid : "\0",
+		                nom ? nom : "\0",
+		                desc ? desc : "u\0",
+		                0x0A);
+		if (nom) g_free ((gpointer)nom);
+		if (desc) g_free ((gpointer)desc);
+		if (satid) g_free ((gpointer)satid);
+		g_output_stream_write(strm, out->str, out->len, NULL, &err);
+	} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(_netList), &iter));
+	g_list_free(l);
+	g_output_stream_close (strm, NULL, NULL);
+	g_object_unref(strm);
+}
 
 void
 _destroy(GtkWidget* wid, gpointer user_data)
@@ -48,19 +153,16 @@ _quitar (GtkToolButton *self, gpointer user_data)
 }
 
 void 
-_cellEdited (GtkCellRendererText *cell,
-         	 gchar               *path_string,
-        	 gchar               *new_text,
-         	 gpointer             user_data)
+_cellEdited (GtkCellRendererText *cell, gchar *path_string, gchar *new_text,
+         	 gpointer user_data)
 {
 	GtkTreeIter iter;
 	GtkTreePath *path = NULL;
 	gchar *old_text;
 	gint t = -1;
 
-	t = GPOINTER_TO_INT(g_object_get_data(
-	                                       G_OBJECT(cell),
-	                                       "colnum"));
+	t = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
+	                                      "colnum"));
 
 	path = gtk_tree_path_new_from_string(path_string);
 	
@@ -74,13 +176,16 @@ _cellEdited (GtkCellRendererText *cell,
                        t, new_text,
 	                   -1);
 	gtk_tree_path_free(path);
+	saved = FALSE;
+	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
+	                                                  TGUARDAR)),
+	                         TRUE);
 }
 
 /** FIN Callbacks **/
 
 GtkWidget* _barraHerramientas()
 {
-	GtkWidget *barra = NULL;
 	GtkWidget *toolBtn = NULL;
 
 	/* Crear barra */
@@ -129,12 +234,13 @@ GtkWidget* _barraHerramientas()
 	                     (gtk_image_new_from_stock(GTK_STOCK_SAVE,
 	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
 	                     "Guardar"));
+	gtk_widget_set_sensitive(toolBtn, FALSE);
 
-	/*** TODO: Ligar botones de barra de herramientas a respectivas señales ***/
-	/* g_signal_connect(toolBtn,
+	/* Conectar señal */
+	g_signal_connect(toolBtn,
 	                    "clicked",
-	                    G_CALLBACK(),
-						NULL);*/
+	                    G_CALLBACK(_save),
+						NULL);
 	
 	/* Agregar botón */
 	gtk_toolbar_insert(GTK_TOOLBAR(barra),
@@ -190,7 +296,7 @@ GtkWidget* _barraHerramientas()
 
 GtkWidget* _menuPrincipal()
 {
-	GtkWidget *menuBar = NULL;
+	
 	GtkWidget *menu = NULL;
 	GtkWidget *submenu = NULL;
 	GtkWidget *subitem = NULL;
@@ -321,6 +427,18 @@ GtkWidget* _listaRed()
 	                              GTK_TYPE_STRING,
 	                              GTK_TYPE_STRING,
 	                              GTK_TYPE_BOOL);
+	g_signal_connect(_netList,
+	                 "row-inserted",
+	                 G_CALLBACK(_rowInsEdit),
+	                 NULL);
+    g_signal_connect(_netList,
+	                 "row-edited",
+	                 G_CALLBACK(_rowInsEdit),
+	                 NULL);
+    g_signal_connect(_netList,
+	                 "row-deleted",
+	                 G_CALLBACK(_rowDel),
+	                 NULL);
     _tv = gtk_tree_view_new_with_model (GTK_TREE_MODEL(_netList));
 	gtk_tree_view_set_headers_clickable (GTK_TREE_VIEW(_tv), FALSE);
 	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW(_tv),
@@ -409,7 +527,7 @@ GtkWidget* net_list_win_new()
 	/* Crear la ventana */
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "Listas de Red");
-	gtk_window_set_default_size (GTK_WINDOW(window), 640, 480);
+	gtk_window_set_default_size(GTK_WINDOW(window), 640, 480);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
 
