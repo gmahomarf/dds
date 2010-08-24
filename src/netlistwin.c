@@ -2,7 +2,7 @@
 
 enum cols
 {
-	COL_IDSAT = 0,
+	COL_IDSAT,
 	COL_NOMBRE,
 	COL_DESC,
 	NUM_COLS
@@ -10,13 +10,30 @@ enum cols
 
 enum toolbtns
 {
-	TNUEVO,
-	TABRIR,
-	TGUARDAR,
-	TSEP,
-	TAGREGAR,
-	TQUITAR,
-	TCOUNT
+	T_NUEVO,
+	T_ABRIR,
+	T_GUARDAR,
+	T_SEP,
+	T_AGREGAR,
+	T_QUITAR,
+	T_COUNT
+};
+
+enum menus
+{
+	M_ARCHIVO,
+	M_COUNT
+};
+
+enum submenusArchivo
+{
+	SMA_NUEVO,
+	SMA_ABRIR,
+	SMA_GUARDAR,
+	SMA_GUARDAR_COMO,
+	SMA_SEP,
+	SMA_SALIR,
+	SMA_COUNT
 };
 
 static GtkListStore *_netList = NULL;
