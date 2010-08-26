@@ -17,12 +17,13 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/types.h>
+/*#include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 
+*/
 #include <config.h>
 
 #include <gtk/gtk.h>
@@ -33,7 +34,7 @@
 /* For testing propose use the local (not installed) ui file */
 /* #define UI_FILE PACKAGE_DATA_DIR"/pmdn_dds/ui/pmdn_dds.ui" */
 #define UI_FILE "src/pmdn_dds.ui"
-#define UI_FILE2 "pmdn_dds.ui"
+
 	
 GtkWidget* create_window (void)
 {
@@ -44,14 +45,8 @@ GtkWidget* create_window (void)
 	builder = gtk_builder_new ();
 	if (!gtk_builder_add_from_file (builder, UI_FILE, &error))
 	{
+		g_warning ("Couldn't load builder file: %s", error->message);
 		g_error_free (error);
-		error = NULL;
-		if (!gtk_builder_add_from_file (builder, UI_FILE2, &error))
-		{
-			g_warning ("Couldn't load builder file: %s", error->message);
-			g_error_free (error);
-		}
-		
 	}
 
 	/* This is important */
@@ -68,8 +63,6 @@ int main (int argc, char *argv[])
 {
  	GtkWidget *window;
 
-
-	
 	gtk_set_locale ();
 	gtk_init (&argc, &argv);
 

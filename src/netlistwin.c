@@ -1,4 +1,5 @@
 #include "netlistwin.h"
+#include <string.h>
 
 enum cols
 {
@@ -45,61 +46,64 @@ static GtkWidget *menuBar = NULL;
 static GString *file = NULL;
 static gboolean saved = TRUE;
 
-/** Callbacks **/
-
-
-/*void
-_rowInsEdit(GtkTreeModel *tree_model, GtkTreePath  *path,
-            GtkTreeIter  *iter, gpointer      user_data)
-{
-	GtkWidget *menuArc = NULL, *submenuArc = NULL;
-	GList *l = NULL;
-
-	l = gtk_container_get_children (GTK_CONTAINER(menuBar));
-	menuArc = GTK_WIDGET(g_list_nth (l, M_ARCHIVO)->data);
-	g_list_free(l);
-	submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
-	l = gtk_container_get_children (GTK_CONTAINER(submenuArc));
-	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(l, SMA_GUARDAR)->data), TRUE);
-	g_list_free(l);
-	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
-	                                                  T_GUARDAR)),
-	                         TRUE);
-	
-	saved = FALSE;
-}
+/** Other Functions **/
 
 void
-_rowDel(GtkTreeModel *tree_model, GtkTreePath  *path,
-        gpointer      user_data)
-{
-	GtkWidget *menuArc = NULL, *submenuArc = NULL;
-	GList *l = NULL;
+_warn(GError *e) {
+	GtkWidget *msgDlg = NULL;
+	GString *eMsg;
 
-	l = gtk_container_get_children (GTK_CONTAINER(menuBar));
-	menuArc = GTK_WIDGET(g_list_nth (l, M_ARCHIVO)->data);
-	g_list_free(l);
-	submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
-	l = gtk_container_get_children (GTK_CONTAINER(submenuArc));
-	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(l, SMA_GUARDAR)->data), TRUE);
-	g_list_free(l);
-	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
-	                                                  T_GUARDAR)),
-	                         TRUE);
-	saved = FALSE;
-}*/
+	eMsg = g_string_new ("Error:\n");
+	g_string_append(eMsg, e->message);
+	msgDlg = gtk_message_dialog_new(GTK_WINDOW(window),
+                             		GTK_DIALOG_MODAL,
+	                                GTK_MESSAGE_ERROR,
+	                                GTK_BUTTONS_OK,
+	                                "%s",
+	                            	eMsg->str);
+	gtk_dialog_run(GTK_DIALOG(msgDlg));
+	gtk_widget_destroy(msgDlg);
+	g_string_free(eMsg, TRUE);
+	g_error_free(e);
+}
 
 gint
 _confirm(){
 	GtkWidget *dlg;
+	GtkVBox *cont;
+	GtkHBox *hbox = NULL;
+	GtkWidget *lbl;
 	gint ret;
 
-	dlg = gtk_message_dialog_new(GTK_WINDOW(window),
-	                             GTK_DIALOG_MODAL,
-	                             GTK_MESSAGE_QUESTION,
-	                             GTK_BUTTONS_YES_NO | GTK_BUTTONS_CANCEL,
-	                             "El archivo no se ha guardado.\n"
-	                             "¿Desea guardar antes de continuar?");
+	dlg = gtk_dialog_new_with_buttons("Aviso",
+	                                  GTK_WINDOW(window),
+	                                  GTK_DIALOG_MODAL | 
+	                                  GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                  "Sí", GTK_RESPONSE_YES,
+	                                  "No", GTK_RESPONSE_NO,
+	                                  "Cancelar", GTK_RESPONSE_CANCEL,
+	                                  NULL);
+    hbox = GTK_HBOX(gtk_hbox_new (FALSE, 0));
+    cont = GTK_VBOX(gtk_dialog_get_content_area (GTK_DIALOG(dlg)));
+	gtk_box_pack_start(GTK_BOX(cont),
+	                   GTK_WIDGET(hbox),
+	                   FALSE,
+	                   TRUE,
+	                   0);
+	lbl = gtk_label_new("El archivo no se ha guardado.\n"
+						"¿Desea guardar antes de continuar?");
+	gtk_box_pack_start(GTK_BOX(hbox),
+	                   gtk_image_new_from_stock (GTK_STOCK_DIALOG_QUESTION,
+	                                             GTK_ICON_SIZE_DIALOG),
+	                   FALSE,
+	                   TRUE,
+	                   0);
+	gtk_box_pack_start(GTK_BOX(hbox),
+	                   lbl,
+	                   FALSE,
+	                   TRUE,
+	                   0);
+	gtk_widget_show_all(GTK_WIDGET(hbox));
 	g_signal_connect(dlg,
 	                 "close",
 	                 G_CALLBACK(gtk_widget_destroy),
@@ -110,7 +114,8 @@ _confirm(){
 	return ret;
 }
 
-void _save()
+gboolean
+_save()
 {
 	GtkWidget *dlg = NULL;
 	GFile *nl = NULL;
@@ -120,9 +125,8 @@ void _save()
 	gchar *satid = NULL, *nom = NULL, *desc = NULL;
 	GString *out = NULL;
 	GError *err = NULL;
-	GtkFileFilter *filtro;
 
-	if (saved) return;
+	if (saved) return TRUE;
 
 	if (!file) {
 		dlg = gtk_file_chooser_dialog_new("Guardar Lista de Red",
@@ -132,15 +136,16 @@ void _save()
 			                              GTK_RESPONSE_ACCEPT,
 			                              "Cancelar",
 			                              GTK_RESPONSE_CANCEL,
-			                              NULL
-			                              );
+			                              NULL);
 		gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dlg),
 		                                                TRUE);
+		/*GtkFileFilter *filtro;
+
 		filtro = gtk_file_filter_new();
 		gtk_file_filter_set_name (filtro, "Listas de Red");
 		gtk_file_filter_add_pattern(filtro, "*.nl");
 		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dlg),filtro);
-		g_object_unref(filtro);
+		g_object_unref(filtro);*/
 		g_signal_connect(dlg, "close",
 		                 G_CALLBACK(gtk_widget_destroy), NULL);
 		if(gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
@@ -148,37 +153,54 @@ void _save()
 			file = g_string_sized_new (255);
 			g_string_assign (file, 
 			                 gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg)));
-			nl = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dlg));
 			gtk_widget_destroy (GTK_WIDGET(dlg));
 		} else {
 			gtk_widget_destroy (GTK_WIDGET(dlg));
-			return;
+			return FALSE;
 		}
-	} else {
-		nl = g_file_new_for_path (file->str);
-	}
+	} 
+	nl = g_file_new_for_path (file->str);
 
 	strm = g_file_replace (nl, NULL, FALSE,
 	                       G_FILE_CREATE_REPLACE_DESTINATION, NULL, &err);
 	/* TODO: Handle File Save Errors */
+	if (!strm) {
+		_warn(err);
+		return FALSE;
+	}
 
 	gtk_tree_model_get_iter_first (GTK_TREE_MODEL(_netList), &iter);
 	do {
 		if (out) g_string_free(out, TRUE);
 		out = g_string_sized_new (255);
-		gtk_tree_model_get(GTK_TREE_MODEL(_netList),
-		                   &iter,
-		                   COL_IDSAT,
-		                   &satid,
-		                   COL_NOMBRE,
-		                   &nom,
-		                   COL_DESC,
-		                   &desc,
-		                   -1);
-		g_string_printf(out, "%s:%s:%s%c",
-		                satid ? satid : "\0",
-		                nom ? nom : "\0",
-		                desc ? desc : "u\0",
+		while(TRUE) {
+			if (!gtk_list_store_iter_is_valid (_netList, &iter)) {
+				break;
+			}
+			gtk_tree_model_get(GTK_TREE_MODEL(_netList),
+				               &iter,
+				               COL_IDSAT,
+				               &satid,
+				               COL_NOMBRE,
+				               &nom,
+				               COL_DESC,
+				               &desc,
+				               -1);
+			if (!satid) {
+				gtk_list_store_remove(_netList, &iter);
+			} else {
+				break;
+			}
+		}
+		if (!gtk_list_store_iter_is_valid (_netList, &iter)) {
+			break;
+		}
+			
+		g_string_printf(out, "%s:%s%s%s%c",
+		                satid,
+		                nom ? nom : "",
+		                (desc && strlen(desc)) ? " " : "",
+		                desc ? desc : "",
 		                0x0A);
 		if (nom) g_free ((gpointer)nom);
 		if (desc) g_free ((gpointer)desc);
@@ -199,17 +221,15 @@ void _save()
 	ls = gtk_container_get_children (GTK_CONTAINER(menuBar));
 	menuArc = GTK_WIDGET(g_list_nth (ls, M_ARCHIVO)->data);
 	g_list_free(ls);
-	ls = gtk_container_get_children (GTK_CONTAINER(menuArc));
-	submenuArc = GTK_WIDGET(g_list_nth (ls, 0));
-	g_list_free(ls);
+	submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
 	ls = gtk_container_get_children (GTK_CONTAINER(submenuArc));
 	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(ls, SMA_GUARDAR)->data), FALSE);
 	g_list_free(ls);
 	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
-	                                                             T_GUARDAR)),
-	                         FALSE);
+	                                              T_GUARDAR)),
+	                     FALSE);
 	saved = TRUE;
-	
+	return TRUE;
 }
 
 gboolean
@@ -219,7 +239,7 @@ _close()
 		/* Confirm opening new file */
 		switch(_confirm()){
 			case GTK_RESPONSE_YES:
-				_save();
+				if(!_save()) return FALSE;
 				break;
 			case GTK_RESPONSE_CANCEL:
 				return FALSE;
@@ -231,6 +251,10 @@ _close()
 	}
 
 	gtk_list_store_clear (_netList);
+	if (file) {
+		g_string_free(file, TRUE);
+		file = NULL;
+	}
 
 	GtkWidget *menuArc = NULL, *submenuArc = NULL;
 	GList *ls = NULL;
@@ -238,13 +262,11 @@ _close()
 	ls = gtk_container_get_children (GTK_CONTAINER(menuBar));
 	menuArc = GTK_WIDGET(g_list_nth (ls, M_ARCHIVO)->data);
 	g_list_free(ls);
-	ls = gtk_container_get_children (GTK_CONTAINER(menuArc));
-	submenuArc = GTK_WIDGET(g_list_nth (ls, 0));
-	g_list_free(ls);
+	submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
 	ls = gtk_container_get_children (GTK_CONTAINER(submenuArc));
 	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(ls, SMA_GUARDAR)->data), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(ls, SMA_CERRAR)->data), FALSE);
-	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(ls, SMA_GUARDAR_COMO)->data), FALSE);
+	/*gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(ls, SMA_GUARDAR_COMO)->data), FALSE);*/
 	g_list_free(ls);
 	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
 	                                                             T_GUARDAR)),
@@ -259,12 +281,9 @@ _open()
 	GtkWidget *dlg = NULL;
 	GFile *nl = NULL;
 	GFileInputStream *strm = NULL;
-	GList *l = NULL;
 	GtkTreeIter iter;
 	gchar *satid = NULL, *nom = NULL, *desc = NULL;
-	GString *ins = NULL;
 	GError *err = NULL;
-	GtkFileFilter *filtro = NULL;
 	
 	if (!_close()) return;
 
@@ -281,11 +300,13 @@ _open()
 		                              GTK_RESPONSE_CANCEL,
 		                              NULL
 		                              );
-	filtro = gtk_file_filter_new();
+	/*GtkFileFilter *filtro = NULL;
+
+ 	filtro = gtk_file_filter_new();
 	gtk_file_filter_set_name (filtro, "Listas de Red");
 	gtk_file_filter_add_pattern(filtro, "*.nl");
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dlg),filtro);
-	g_object_unref(filtro);
+	g_object_unref(filtro);*/
 	                            
 	g_signal_connect(dlg,
 	                 "close",
@@ -294,19 +315,80 @@ _open()
 	if(gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {	
 		g_string_assign(file,
 		                gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg)));
-		nl = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dlg));
-		strm = g_file_read(nl, NULL, &err);
-		/* TODO: Handle File Open Errors */
-
-		
-		
 		gtk_widget_destroy(dlg);
 	} else {
 		gtk_widget_destroy(dlg);
 		return;
 	}
 
+	nl = g_file_new_for_path (file->str);
 	
+	strm = g_file_read(nl, NULL, &err);
+	/* TODO: Handle File Open Errors */
+	if (!strm) {
+		_warn(err);
+		return;
+	}
+
+	GFileInfo *finfo = NULL;
+	guint64 fsize;
+	gsize read;
+	gchar *fcont;
+	gboolean t;
+
+	finfo = g_file_input_stream_query_info (strm,
+	                                		G_FILE_ATTRIBUTE_STANDARD_SIZE,
+	                                		NULL,
+	                                		&err);
+	if (!finfo) {
+		_warn(err);
+		return;
+	}
+	fsize = g_file_info_get_attribute_uint64 (finfo,
+	                                  G_FILE_ATTRIBUTE_STANDARD_SIZE);
+
+	fcont = (gchar*)g_malloc((gsize)fsize + 1);
+	fcont[fsize] = '\0';
+
+	t = g_input_stream_read_all(G_INPUT_STREAM(strm),
+	                        	fcont,
+	                        	(gsize)fsize,
+	                        	&read,
+	                        	NULL,
+	                        	&err);
+	if (!t) {
+		_warn(err);
+		return;
+	}
+	GRegex *regex;
+	GMatchInfo *match_info;	
+
+	regex = g_regex_new("^([0-9A-F]{8}):([\\S]*) ?(.*)$",
+	                    G_REGEX_MULTILINE,
+	                    0,
+	                    NULL);
+	g_regex_match_full (regex, fcont, fsize, 0, 0, &match_info, &err);
+  	while (g_match_info_matches (match_info))
+    {
+		satid = g_match_info_fetch (match_info, 1);
+		nom = g_match_info_fetch (match_info, 2);
+		desc = g_match_info_fetch (match_info, 3);
+
+		gtk_list_store_append(_netList, &iter);
+		gtk_list_store_set(_netList, &iter,
+	                   COL_IDSAT, satid,
+	                   COL_NOMBRE, nom,
+	                   COL_DESC, desc,
+	                   -1);                     
+		
+        g_free (satid);
+        g_free (nom);
+        g_free (desc);
+        g_match_info_next (match_info, &err);
+    }
+	g_match_info_free (match_info);
+	g_regex_unref (regex);
+	g_free(fcont);
 	
 	GtkWidget *menuArc = NULL, *submenuArc = NULL;
 	GList *ls = NULL;
@@ -314,9 +396,7 @@ _open()
 	ls = gtk_container_get_children (GTK_CONTAINER(menuBar));
 	menuArc = GTK_WIDGET(g_list_nth (ls, M_ARCHIVO)->data);
 	g_list_free(ls);
-	ls = gtk_container_get_children (GTK_CONTAINER(menuArc));
-	submenuArc = GTK_WIDGET(g_list_nth (ls, 0));
-	g_list_free(ls);
+	submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
 	ls = gtk_container_get_children (GTK_CONTAINER(submenuArc));
 	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(ls, SMA_CERRAR)->data), TRUE);
 	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(ls, SMA_GUARDAR_COMO)->data), TRUE);
@@ -324,6 +404,10 @@ _open()
 
 	saved = TRUE;
 }
+
+/** FIN Other Functions **/
+
+/** Callbacks **/
 
 void
 _onOpen(GtkWidget *self, gpointer user_data)
@@ -335,6 +419,57 @@ void
 _onSave(GtkWidget *self, gpointer user_data)
 {
 	_save();
+}
+
+void
+_onSaveAs(GtkWidget *self, gpointer user_data)
+{
+	GtkWidget *dlg = NULL;
+	
+	dlg = gtk_file_chooser_dialog_new("Guardar Lista de Red",
+		                              GTK_WINDOW(window),
+		                              GTK_FILE_CHOOSER_ACTION_SAVE,
+		                              "Guardar",
+		                              GTK_RESPONSE_ACCEPT,
+		                              "Cancelar",
+		                              GTK_RESPONSE_CANCEL,
+		                              NULL);
+	gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dlg),
+	                                                TRUE);
+	/*GtkFileFilter *filtro;
+
+	filtro = gtk_file_filter_new();
+	gtk_file_filter_set_name (filtro, "Listas de Red");
+	gtk_file_filter_add_pattern(filtro, "*.nl");
+	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dlg),filtro);
+	g_object_unref(filtro);*/
+	g_signal_connect(dlg, "close",
+	                 G_CALLBACK(gtk_widget_destroy), NULL);
+	if(gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
+		g_string_free(file, TRUE);
+		file = g_string_sized_new (255);
+		g_string_assign (file, 
+		                 gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg)));
+		gtk_widget_destroy (GTK_WIDGET(dlg));
+	} else {
+		gtk_widget_destroy (GTK_WIDGET(dlg));
+		return;
+	}		
+	_save();
+}
+
+void
+_onNew(GtkWidget *self, gpointer user_data)
+{
+	_close();
+}
+
+void
+_onSalir(GtkWidget *self, gpointer user_data)
+{
+	if(_close()) {
+		gtk_widget_destroy(window);
+	}
 }
 
 void
@@ -350,37 +485,14 @@ void
 _onAgregar (GtkToolButton *self, gpointer user_data)
 {
 	GtkTreeIter iter;
-	GtkWidget *menuArc = NULL, *submenuArc = NULL;
-	GList *l = NULL;
 
-	l = gtk_container_get_children (GTK_CONTAINER(menuBar));
-	menuArc = GTK_WIDGET(g_list_nth (l, M_ARCHIVO)->data);
-	g_list_free(l);
-	submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
-	l = gtk_container_get_children (GTK_CONTAINER(submenuArc));
-	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(l, SMA_GUARDAR)->data), TRUE);
-	g_list_free(l);
-	
 	gtk_list_store_append(_netList, &iter);
 	/*gtk_list_store_set(_netList, &iter,
 	                   COL_IDSAT, "<id>",
 	                   COL_NOMBRE, "<nombre>",
 	                   COL_DESC, "<desc>",
 	                   -1);*/
-	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
-	                                                  T_GUARDAR)),
-	                         TRUE);
-	saved = FALSE;
-}
-
-void
-_onQuitar (GtkToolButton *self, gpointer user_data)
-{
-	GtkTreeIter iter;
-  	GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW(_tv));
-	
-	if (gtk_tree_selection_get_selected (selection, NULL, &iter))
-	{
+	if (saved) {
 		GtkWidget *menuArc = NULL, *submenuArc = NULL;
 		GList *l = NULL;
 
@@ -391,11 +503,39 @@ _onQuitar (GtkToolButton *self, gpointer user_data)
 		l = gtk_container_get_children (GTK_CONTAINER(submenuArc));
 		gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(l, SMA_GUARDAR)->data), TRUE);
 		g_list_free(l);
-		gtk_list_store_remove (_netList, &iter);
 		gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
 	                                                  T_GUARDAR)),
 	                         TRUE);
 		saved = FALSE;
+	}
+	
+}
+
+void
+_onQuitar (GtkToolButton *self, gpointer user_data)
+{
+	GtkTreeIter iter;
+  	GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW(_tv));
+	
+	if (gtk_tree_selection_get_selected (selection, NULL, &iter))
+	{
+		gtk_list_store_remove (_netList, &iter);
+		if (saved) {
+			GtkWidget *menuArc = NULL, *submenuArc = NULL;
+			GList *l = NULL;
+
+			l = gtk_container_get_children (GTK_CONTAINER(menuBar));
+			menuArc = GTK_WIDGET(g_list_nth (l, M_ARCHIVO)->data);
+			g_list_free(l);
+			submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
+			l = gtk_container_get_children (GTK_CONTAINER(submenuArc));
+			gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(l, SMA_GUARDAR)->data), TRUE);
+			g_list_free(l);
+			gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
+			                                              T_GUARDAR)),
+			                     TRUE);
+			saved = FALSE;
+		}
 	}
 }
 
@@ -407,19 +547,7 @@ _onCellEdited (GtkCellRendererText *cell, gchar *path_string, gchar *new_text,
 	GtkTreePath *path = NULL;
 	gchar *old_text;
 	gint t = -1;
-	GtkWidget *menuArc = NULL, *submenuArc = NULL;
-	GList *l = NULL;
 
-	l = gtk_container_get_children (GTK_CONTAINER(menuBar));
-	menuArc = GTK_WIDGET(g_list_nth (l, M_ARCHIVO));
-	g_list_free(l);
-	l = gtk_container_get_children (GTK_CONTAINER(menuArc));
-	submenuArc = GTK_WIDGET(g_list_nth (l, 0));
-	g_list_free(l);
-	l = gtk_container_get_children (GTK_CONTAINER(submenuArc));
-	gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(l, SMA_GUARDAR)), TRUE);
-	g_list_free(l);
-	
 	t = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
 	                                      "colnum"));
 
@@ -435,10 +563,30 @@ _onCellEdited (GtkCellRendererText *cell, gchar *path_string, gchar *new_text,
                        t, new_text,
 	                   -1);
 	gtk_tree_path_free(path);
-	saved = FALSE;
-	gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
-	                                                  T_GUARDAR)),
-	                         TRUE);
+	if (saved) {
+		GtkWidget *menuArc = NULL, *submenuArc = NULL;
+		GList *l = NULL;
+
+		l = gtk_container_get_children (GTK_CONTAINER(menuBar));
+		menuArc = GTK_WIDGET(g_list_nth (l, M_ARCHIVO)->data);
+		g_list_free(l);
+		submenuArc = gtk_menu_item_get_submenu (GTK_MENU_ITEM(menuArc));
+		l = gtk_container_get_children (GTK_CONTAINER(submenuArc));
+		gtk_widget_set_sensitive(GTK_WIDGET(g_list_nth(l, SMA_GUARDAR)->data), TRUE);
+		g_list_free(l);
+		gtk_widget_set_sensitive(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(barra),
+		                                              T_GUARDAR)),
+		                     TRUE);
+		saved = FALSE;
+	}
+}
+
+gboolean
+_onDeleteEvent(GtkWidget *widget,
+               GdkEvent  *event,
+               gpointer   user_data)
+{
+	return !_close();
 }
 
 /** FIN Callbacks **/
@@ -457,12 +605,13 @@ GtkWidget* _barraHerramientas()
 	                     (gtk_image_new_from_stock(GTK_STOCK_NEW,
 	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
 	                     "Nueva"));
+	gtk_widget_set_tooltip_text (toolBtn, "Nueva");
 
 	/*** TODO: Ligar botones de barra de herramientas a respectivas señales ***/
-	/* g_signal_connect(toolBtn,
+	g_signal_connect(toolBtn,
 	                    "clicked",
-	                    G_CALLBACK(),
-						NULL);*/
+	                    G_CALLBACK(_onNew),
+						NULL);
 	
 	/* Agregar botón */
 	gtk_toolbar_insert(GTK_TOOLBAR(barra),
@@ -475,12 +624,13 @@ GtkWidget* _barraHerramientas()
 	                     (gtk_image_new_from_stock(GTK_STOCK_OPEN,
 	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
 	                     "Abrir"));
+	gtk_widget_set_tooltip_text (toolBtn, "Abrir");
 
 	/*** TODO: Ligar botones de barra de herramientas a respectivas señales ***/
-	/* g_signal_connect(toolBtn,
+	g_signal_connect(toolBtn,
 	                    "clicked",
-	                    G_CALLBACK(),
-						NULL);*/
+	                    G_CALLBACK(_onOpen),
+						NULL);
 	
 	/* Agregar botón */
 	gtk_toolbar_insert(GTK_TOOLBAR(barra),
@@ -493,6 +643,7 @@ GtkWidget* _barraHerramientas()
 	                     (gtk_image_new_from_stock(GTK_STOCK_SAVE,
 	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
 	                     "Guardar"));
+	gtk_widget_set_tooltip_text (toolBtn, "Guardar");
 	gtk_widget_set_sensitive(toolBtn, FALSE);
 
 	/* Conectar señal */
@@ -520,6 +671,7 @@ GtkWidget* _barraHerramientas()
 	                     (gtk_image_new_from_stock(GTK_STOCK_ADD,
 	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
 	                     "Agregar"));
+	gtk_widget_set_tooltip_text (toolBtn, "Agregar");
 
 	/*** Conectar señal ***/
 	g_signal_connect(toolBtn,
@@ -538,6 +690,7 @@ GtkWidget* _barraHerramientas()
 	                     (gtk_image_new_from_stock(GTK_STOCK_REMOVE,
 	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
 	                     "Quitar"));
+	gtk_widget_set_tooltip_text (toolBtn, "Quitar");
 
 	/* Conectar Señal */
 	g_signal_connect(toolBtn,
@@ -577,10 +730,10 @@ GtkWidget* _menuPrincipal()
 	                                                        GTK_ICON_SIZE_MENU));
 
 	/*** TODO: Ligar menús a sus respectivas señales ***/
-	/*g_signal_connect(subitem,
+	g_signal_connect(subitem,
 	                 "activate",
-	                 G_CALLBACK(),
-	                 NULL);*/
+	                 G_CALLBACK(_onNew),
+	                 NULL);
 
 	/* Agregar subitem a submenú */
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
@@ -592,10 +745,10 @@ GtkWidget* _menuPrincipal()
 	                                                        GTK_ICON_SIZE_MENU));
 
 	/*** TODO: Ligar menús a sus respectivas señales ***/
-	/*g_signal_connect(subitem,
+	g_signal_connect(subitem,
 	                 "activate",
-	                 G_CALLBACK(),
-	                 NULL);*/
+	                 G_CALLBACK(_onOpen),
+	                 NULL);
 
 	/* Agregar subitem a submenú */
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
@@ -623,25 +776,10 @@ GtkWidget* _menuPrincipal()
 	                                                        GTK_ICON_SIZE_MENU));
 
 	/*** TODO: Ligar menús a sus respectivas señales ***/
-	/*g_signal_connect(subitem,
+	g_signal_connect(subitem,
 	                 "activate",
-	                 G_CALLBACK(),
-	                 NULL);*/
-
-	/* Agregar subitem a submenú */
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
-	
-	/* Crear subitem 'Cerrar' */
-	subitem = gtk_image_menu_item_new_with_mnemonic ("_Cerrar");
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(subitem),
-	                              gtk_image_new_from_stock (GTK_STOCK_CLOSE,
-	                                                        GTK_ICON_SIZE_MENU));
-
-	/*** TODO: Ligar menús a sus respectivas señales ***/
-	/*g_signal_connect(subitem,
-	                 "activate",
-	                 G_CALLBACK(),
-	                 NULL);*/
+	                 G_CALLBACK(_onSaveAs),
+	                 NULL);
 
 	/* Agregar subitem a submenú */
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
@@ -659,10 +797,10 @@ GtkWidget* _menuPrincipal()
 	                                                        GTK_ICON_SIZE_MENU));
 
 	/*** TODO: Ligar menús a sus respectivas señales ***/
-	/*g_signal_connect(subitem,
+	g_signal_connect(subitem,
 	                 "activate",
-	                 G_CALLBACK(),
-	                 NULL);*/
+	                 G_CALLBACK(_onSalir),
+	                 NULL);
 
 	/* Agregar subitem a submenú */
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
@@ -793,6 +931,10 @@ GtkWidget* net_list_win_new()
 	g_signal_connect(window,
 	                 "destroy",
 	                 G_CALLBACK(_onDestroy),
+	                 NULL);
+		g_signal_connect(window,
+	                 "delete-event",
+	                 G_CALLBACK(_onDeleteEvent),
 	                 NULL);
 
 	/* Crear vbox */
