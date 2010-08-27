@@ -23,6 +23,7 @@
 
 #include "callbacks.h"
 #include "netlistwin.h"
+#include "searchcriteriawindow.h"
 
 
 void
@@ -39,3 +40,13 @@ void showNL (GtkImageMenuItem *self, gpointer user_data)
 	
 	gtk_widget_show_all (window);
 }
+
+void showSC (GtkImageMenuItem *self, gpointer user_data)
+{
+	GtkWidget *window;
+
+	window = search_criteria_window_new();
+	
+	gtk_widget_show_all (window);
+}
+

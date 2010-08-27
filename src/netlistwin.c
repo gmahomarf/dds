@@ -932,7 +932,7 @@ GtkWidget* net_list_win_new()
 	                 "destroy",
 	                 G_CALLBACK(_onDestroy),
 	                 NULL);
-		g_signal_connect(window,
+	g_signal_connect(window,
 	                 "delete-event",
 	                 G_CALLBACK(_onDeleteEvent),
 	                 NULL);

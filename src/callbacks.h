@@ -21,3 +21,4 @@
 
 void destroy (GtkWidget *widget, gpointer data);
 void showNL (GtkImageMenuItem *self, gpointer user_data);
+void showSC (GtkImageMenuItem *self, gpointer user_data);
