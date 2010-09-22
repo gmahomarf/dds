@@ -300,13 +300,13 @@ _open()
 		                              GTK_RESPONSE_CANCEL,
 		                              NULL
 		                              );
-	/*GtkFileFilter *filtro = NULL;
+	GtkFileFilter *filtro = NULL;
 
  	filtro = gtk_file_filter_new();
 	gtk_file_filter_set_name (filtro, "Listas de Red");
 	gtk_file_filter_add_pattern(filtro, "*.nl");
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dlg),filtro);
-	g_object_unref(filtro);*/
+	//g_object_unref(filtro);
 	                            
 	g_signal_connect(dlg,
 	                 "close",
@@ -549,7 +549,7 @@ _onCellEdited (GtkCellRendererText *cell, gchar *path_string, gchar *new_text,
 	gint t = -1;
 
 	t = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
-	                                      "colnum"));
+	                      "colnum"));
 
 	path = gtk_tree_path_new_from_string(path_string);
 	
@@ -591,256 +591,54 @@ _onDeleteEvent(GtkWidget *widget,
 
 /** FIN Callbacks **/
 
-GtkWidget* _barraHerramientas()
+/* For testing propose use the local (not installed) ui file */
+/* #define UI_FILE PACKAGE_DATA_DIR"/pmdn_dds/ui/pmdn_dds.ui" */
+#define UI_FILE "src/netlistwin.ui"
+
+GtkWidget* net_list_win_new()
 {
-	GtkWidget *toolBtn = NULL;
+	GtkBuilder *builder;
+	GError* error = NULL;
 
-	/* Crear barra */
-	barra = gtk_toolbar_new();
-
-	/*** Crear Botones ***/
-	/* Crear botón 'Nueva' */
-	toolBtn = GTK_WIDGET(
-		      	gtk_tool_button_new
-	                     (gtk_image_new_from_stock(GTK_STOCK_NEW,
-	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
-	                     "Nueva"));
-	gtk_widget_set_tooltip_text (toolBtn, "Nueva");
-
-	/*** TODO: Ligar botones de barra de herramientas a respectivas señales ***/
-	g_signal_connect(toolBtn,
-	                    "clicked",
-	                    G_CALLBACK(_onNew),
-						NULL);
-	
-	/* Agregar botón */
-	gtk_toolbar_insert(GTK_TOOLBAR(barra),
-	                   GTK_TOOL_ITEM(toolBtn),
-	                   -1);
-
-	/* Crear botón 'Abrir' */
-	toolBtn = GTK_WIDGET(
-		      	gtk_tool_button_new
-	                     (gtk_image_new_from_stock(GTK_STOCK_OPEN,
-	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
-	                     "Abrir"));
-	gtk_widget_set_tooltip_text (toolBtn, "Abrir");
-
-	/*** TODO: Ligar botones de barra de herramientas a respectivas señales ***/
-	g_signal_connect(toolBtn,
-	                    "clicked",
-	                    G_CALLBACK(_onOpen),
-						NULL);
-	
-	/* Agregar botón */
-	gtk_toolbar_insert(GTK_TOOLBAR(barra),
-	                   GTK_TOOL_ITEM(toolBtn),
-	                   -1);
-
-	/* Crear botón 'Guardar' */
-	toolBtn = GTK_WIDGET(
-		      	gtk_tool_button_new
-	                     (gtk_image_new_from_stock(GTK_STOCK_SAVE,
-	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
-	                     "Guardar"));
-	gtk_widget_set_tooltip_text (toolBtn, "Guardar");
-	gtk_widget_set_sensitive(toolBtn, FALSE);
-
-	/* Conectar señal */
-	g_signal_connect(toolBtn,
-	                    "clicked",
-	                    G_CALLBACK(_onSave),
-						NULL);
-	
-	/* Agregar botón */
-	gtk_toolbar_insert(GTK_TOOLBAR(barra),
-	                   GTK_TOOL_ITEM(toolBtn),
-	                   -1);
-
-	/* Crear separador */
-	toolBtn = GTK_WIDGET(gtk_separator_tool_item_new ());
-
-	/* Agregar separador */
-	gtk_toolbar_insert(GTK_TOOLBAR(barra),
-	                   GTK_TOOL_ITEM(toolBtn),
-	                   -1);
-
-	/* Crear botón 'Agregar' */
-	toolBtn = GTK_WIDGET(
-		      	gtk_tool_button_new
-	                     (gtk_image_new_from_stock(GTK_STOCK_ADD,
-	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
-	                     "Agregar"));
-	gtk_widget_set_tooltip_text (toolBtn, "Agregar");
-
-	/*** Conectar señal ***/
-	g_signal_connect(toolBtn,
-	                 "clicked",
-	                 G_CALLBACK(_onAgregar),
-	                 NULL);
-	
-	/* Agregar botón */
-	gtk_toolbar_insert(GTK_TOOLBAR(barra),
-	                   GTK_TOOL_ITEM(toolBtn),
-	                   -1);
-
-	/* Crear botón 'Quitar' */
-	toolBtn = GTK_WIDGET(
-		      	gtk_tool_button_new
-	                     (gtk_image_new_from_stock(GTK_STOCK_REMOVE,
-	                                               GTK_ICON_SIZE_SMALL_TOOLBAR),
-	                     "Quitar"));
-	gtk_widget_set_tooltip_text (toolBtn, "Quitar");
-
-	/* Conectar Señal */
-	g_signal_connect(toolBtn,
-	                    "clicked",
-	                    G_CALLBACK(_onQuitar),
-						NULL);
-	
-	/* Agregar botón */
-	gtk_toolbar_insert(GTK_TOOLBAR(barra),
-	                   GTK_TOOL_ITEM(toolBtn),
-	                   -1);
-
-	return barra;
-}
-
-GtkWidget* _menuPrincipal()
-{
-	
-	GtkWidget *menu = NULL;
-	GtkWidget *submenu = NULL;
-	GtkWidget *subitem = NULL;
-
-	/* Crear barra de menú */
-	menuBar = gtk_menu_bar_new ();
-
-	/** Menú 'Archivo' **/
-	/* Crear menú */
-	menu = gtk_menu_item_new_with_mnemonic ("_Archivo");
-
-	/* Crear submenú */
-	submenu = gtk_menu_new();
-
-	/* Crear subitem 'Nueva' */
-	subitem = gtk_image_menu_item_new_with_mnemonic ("_Nueva");
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(subitem),
-	                              gtk_image_new_from_stock (GTK_STOCK_NEW,
-	                                                        GTK_ICON_SIZE_MENU));
-
-	/*** TODO: Ligar menús a sus respectivas señales ***/
-	g_signal_connect(subitem,
-	                 "activate",
-	                 G_CALLBACK(_onNew),
-	                 NULL);
-
-	/* Agregar subitem a submenú */
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
-	
-	/* Crear subitem 'Abrir' */
-	subitem = gtk_image_menu_item_new_with_mnemonic ("_Abrir...");
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(subitem),
-	                              gtk_image_new_from_stock (GTK_STOCK_OPEN,
-	                                                        GTK_ICON_SIZE_MENU));
-
-	/*** TODO: Ligar menús a sus respectivas señales ***/
-	g_signal_connect(subitem,
-	                 "activate",
-	                 G_CALLBACK(_onOpen),
-	                 NULL);
-
-	/* Agregar subitem a submenú */
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
-	
-	/* Crear subitem 'Guardar' */
-	subitem = gtk_image_menu_item_new_with_mnemonic ("_Guardar");
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(subitem),
-	                              gtk_image_new_from_stock (GTK_STOCK_SAVE,
-	                                                        GTK_ICON_SIZE_MENU));
-	gtk_widget_set_sensitive (subitem, FALSE);
-
-	/* Conectar señal */
-	g_signal_connect(subitem,
-	                 "activate",
-	                 G_CALLBACK(_onSave),
-	                 NULL);
-
-	/* Agregar subitem a submenú */
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
-	
-	/* Crear subitem 'Guardar como' */
-	subitem = gtk_image_menu_item_new_with_mnemonic ("Guardar como...");
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(subitem),
-	                              gtk_image_new_from_stock (GTK_STOCK_SAVE_AS,
-	                                                        GTK_ICON_SIZE_MENU));
-
-	/*** TODO: Ligar menús a sus respectivas señales ***/
-	g_signal_connect(subitem,
-	                 "activate",
-	                 G_CALLBACK(_onSaveAs),
-	                 NULL);
-
-	/* Agregar subitem a submenú */
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
-	
-	/* Crear separador */
-	subitem = gtk_separator_menu_item_new();
-
-	/* Agregar separador a submenú */
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
-	
-	/* Crear subitem 'Salir' */
-	subitem = gtk_image_menu_item_new_with_mnemonic ("_Salir");
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(subitem),
-	                              gtk_image_new_from_stock (GTK_STOCK_QUIT,
-	                                                        GTK_ICON_SIZE_MENU));
-
-	/*** TODO: Ligar menús a sus respectivas señales ***/
-	g_signal_connect(subitem,
-	                 "activate",
-	                 G_CALLBACK(_onSalir),
-	                 NULL);
-
-	/* Agregar subitem a submenú */
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), subitem);
-	
-	/* Agregar submenú a menú*/
-	gtk_menu_item_set_submenu (GTK_MENU_ITEM(menu), submenu);
-
-	/* Agregar menú a barra */
-	gtk_menu_shell_append(GTK_MENU_SHELL(menuBar), menu);
-
-	return menuBar;
-}
-
-GtkWidget* _listaRed()
-{
 	GtkCellRenderer *renderer = NULL;
-	//GtkWidget *tv = NULL;
 	
+	builder = gtk_builder_new ();
+	if (!gtk_builder_add_from_file (builder, UI_FILE, &error))
+	{
+		g_warning ("No se pudo cargar el archivo de builder: %s", error->message);
+		g_error_free (error);
+	}
+
+	/* This is important */
+	gtk_builder_connect_signals (builder, NULL);
+	window = GTK_WIDGET (gtk_builder_get_object (builder, "window"));
+	_tv = GTK_WIDGET (gtk_builder_get_object (builder, "_tv"));
+	barra = GTK_WIDGET (gtk_builder_get_object (builder, "barra"));
+	menuBar = GTK_WIDGET (gtk_builder_get_object (builder, "menuBar"));
+	
+	gtk_window_set_title(GTK_WINDOW(window), "Listas de Red");
+	gtk_window_set_default_size(GTK_WINDOW(window), 640, 480);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+	g_signal_connect(window,
+	                 "destroy",
+	                 G_CALLBACK(_onDestroy),
+	                 NULL);
+	g_signal_connect(window,
+	                 "delete-event",
+	                 G_CALLBACK(_onDeleteEvent),
+	                 NULL);
+
+	g_object_unref (builder);
+
+
 	/* TreeView y Modelo */
 	_netList = gtk_list_store_new(NUM_COLS,
 	                              GTK_TYPE_STRING,
 	                              GTK_TYPE_STRING,
-	                              GTK_TYPE_STRING,
-	                              GTK_TYPE_BOOL);
-	/*g_signal_connect(_netList,
-	                 "row-inserted",
-	                 G_CALLBACK(_rowInsEdit),
-	                 NULL);
-    g_signal_connect(_netList,
-	                 "row-edited",
-	                 G_CALLBACK(_rowInsEdit),
-	                 NULL);
-    g_signal_connect(_netList,
-	                 "row-deleted",
-	                 G_CALLBACK(_rowDel),
-	                 NULL);*/
-    _tv = gtk_tree_view_new_with_model (GTK_TREE_MODEL(_netList));
-	gtk_tree_view_set_headers_clickable (GTK_TREE_VIEW(_tv), FALSE);
-	gtk_tree_view_set_grid_lines (GTK_TREE_VIEW(_tv),
-	                              GTK_TREE_VIEW_GRID_LINES_BOTH);
+	                              GTK_TYPE_STRING);
+	
+	gtk_tree_view_set_model(GTK_TREE_VIEW(_tv), GTK_TREE_MODEL(_netList));
 
 	/* Columna Id Satelital */
 	renderer = gtk_cell_renderer_text_new ();
@@ -865,7 +663,7 @@ GtkWidget* _listaRed()
 	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_IDSAT),
 	                                GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-	
+
 	/* Columna Nombre */
 	renderer = gtk_cell_renderer_text_new ();
 	g_object_set(G_OBJECT(renderer),
@@ -878,7 +676,7 @@ GtkWidget* _listaRed()
 	                 G_CALLBACK(_onCellEdited),
 	                 NULL);
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (_tv), -1,
-                                                "Nombre", renderer,
+	                                            "Nombre", renderer,
 	                                            "text", COL_NOMBRE,
 	                                            NULL);
 	gtk_tree_view_column_set_expand(gtk_tree_view_get_column(
@@ -889,7 +687,7 @@ GtkWidget* _listaRed()
 	                                                         GTK_TREE_VIEW(_tv),
 	                                                         COL_NOMBRE),
 	                                GTK_TREE_VIEW_COLUMN_AUTOSIZE);	                 
-	
+
 	/* Columna Descripción */
 	renderer = gtk_cell_renderer_text_new ();
 	g_object_set(G_OBJECT(renderer),
@@ -902,7 +700,7 @@ GtkWidget* _listaRed()
 	                 G_CALLBACK(_onCellEdited),
 	                 NULL);
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW (_tv), -1,
-                                                "Descripción", renderer,
+	                                            "Descripción", renderer,
 	                                            "text", COL_DESC,
 	                                            NULL);
 	gtk_tree_view_column_set_expand(gtk_tree_view_get_column(
@@ -914,59 +712,5 @@ GtkWidget* _listaRed()
 	                                                         COL_DESC),
 	                                GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 
-	return _tv;
-}
-
-GtkWidget* net_list_win_new()
-{
-	GtkWidget *vbox1 = NULL;
-	GtkWidget *sw = NULL;
-
-	/* Crear la ventana */
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title(GTK_WINDOW(window), "Listas de Red");
-	gtk_window_set_default_size(GTK_WINDOW(window), 640, 480);
-	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
-	g_signal_connect(window,
-	                 "destroy",
-	                 G_CALLBACK(_onDestroy),
-	                 NULL);
-	g_signal_connect(window,
-	                 "delete-event",
-	                 G_CALLBACK(_onDeleteEvent),
-	                 NULL);
-
-	/* Crear vbox */
-	vbox1 = gtk_vbox_new (FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(vbox1));
-
-	/* Menú principal */
-	gtk_box_pack_start(GTK_BOX(vbox1),
-	                   _menuPrincipal(),
-	                   FALSE,
-	                   TRUE,
-	                   0);
-
-	/* Barra de Herramientas */
-	gtk_box_pack_start(GTK_BOX(vbox1),
-	                   _barraHerramientas(),
-	                   FALSE,
-	                   TRUE,
-	                   0);
-
-	/* Lista de red */
-	sw = gtk_scrolled_window_new(NULL, NULL);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW(sw),
-	                                GTK_POLICY_AUTOMATIC,
-	                                GTK_POLICY_AUTOMATIC);
-	gtk_container_add(GTK_CONTAINER(sw),
-	                  _listaRed());
-	gtk_box_pack_start (GTK_BOX(vbox1),
-	                    sw,
-	                    TRUE,
-	                    TRUE,
-	                    0);
-	
 	return window;
 }
