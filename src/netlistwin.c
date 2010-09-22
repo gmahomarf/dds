@@ -126,6 +126,8 @@ _save()
 	GString *out = NULL;
 	GError *err = NULL;
 
+	gchar *sub = NULL;
+
 	if (saved) return TRUE;
 
 	if (!file) {
@@ -139,13 +141,12 @@ _save()
 			                              NULL);
 		gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dlg),
 		                                                TRUE);
-		/*GtkFileFilter *filtro;
+		GtkFileFilter *filtro;
 
 		filtro = gtk_file_filter_new();
 		gtk_file_filter_set_name (filtro, "Listas de Red");
 		gtk_file_filter_add_pattern(filtro, "*.nl");
-		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dlg),filtro);
-		g_object_unref(filtro);*/
+		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dlg),filtro);
 		g_signal_connect(dlg, "close",
 		                 G_CALLBACK(gtk_widget_destroy), NULL);
 		if(gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
@@ -153,6 +154,10 @@ _save()
 			file = g_string_sized_new (255);
 			g_string_assign (file, 
 			                 gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg)));
+			if (g_strcmp0(".nl", sub = g_strndup((file->str + file->len - 3), 3))) {
+				g_string_append(file, ".nl");
+			}
+			g_free(sub);
 			gtk_widget_destroy (GTK_WIDGET(dlg));
 		} else {
 			gtk_widget_destroy (GTK_WIDGET(dlg));
@@ -305,7 +310,11 @@ _open()
  	filtro = gtk_file_filter_new();
 	gtk_file_filter_set_name (filtro, "Listas de Red");
 	gtk_file_filter_add_pattern(filtro, "*.nl");
-	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dlg),filtro);
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dlg),filtro);
+	filtro = gtk_file_filter_new();
+	gtk_file_filter_set_name (filtro, "Todos los archivos");
+	gtk_file_filter_add_pattern(filtro, "*");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dlg),filtro);
 	//g_object_unref(filtro);
 	                            
 	g_signal_connect(dlg,
@@ -425,6 +434,7 @@ void
 _onSaveAs(GtkWidget *self, gpointer user_data)
 {
 	GtkWidget *dlg = NULL;
+	gchar * sub = NULL;
 	
 	dlg = gtk_file_chooser_dialog_new("Guardar Lista de Red",
 		                              GTK_WINDOW(window),
@@ -436,13 +446,12 @@ _onSaveAs(GtkWidget *self, gpointer user_data)
 		                              NULL);
 	gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dlg),
 	                                                TRUE);
-	/*GtkFileFilter *filtro;
+	GtkFileFilter *filtro;
 
 	filtro = gtk_file_filter_new();
 	gtk_file_filter_set_name (filtro, "Listas de Red");
 	gtk_file_filter_add_pattern(filtro, "*.nl");
-	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dlg),filtro);
-	g_object_unref(filtro);*/
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dlg),filtro);
 	g_signal_connect(dlg, "close",
 	                 G_CALLBACK(gtk_widget_destroy), NULL);
 	if(gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
@@ -450,6 +459,10 @@ _onSaveAs(GtkWidget *self, gpointer user_data)
 		file = g_string_sized_new (255);
 		g_string_assign (file, 
 		                 gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg)));
+		if (g_strcmp0(".nl", sub = g_strndup((file->str + file->len - 3), 3))) {
+			g_string_append(file, ".nl");
+		}
+		g_free(sub);
 		gtk_widget_destroy (GTK_WIDGET(dlg));
 	} else {
 		gtk_widget_destroy (GTK_WIDGET(dlg));
