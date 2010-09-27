@@ -24,7 +24,8 @@ pmdn_dds_SOURCES = \
 	main.c \
 	netlistwin.c \
 	netlistwin.h \
-	searchcriteriawindow.h
+	searchcriteriawindow.h \
+	searchcriteriawindow.c
 
 pmdn_dds_LDFLAGS = \
 	-Wl,--export-dynamic

@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <interface>
   <requires lib="gtk+" version="2.20"/>
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="window">
+    <property name="modal">True</property>
     <property name="window_position">center</property>
     <property name="default_width">640</property>
     <property name="default_height">480</property>
@@ -27,7 +28,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image1</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="_onNew" swapped="no"/>
+                        <signal name="activate" handler="_onNew"/>
                       </object>
                     </child>
                     <child>
@@ -37,7 +38,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image2</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="_onOpen" swapped="no"/>
+                        <signal name="activate" handler="_onOpen"/>
                       </object>
                     </child>
                     <child>
@@ -47,7 +48,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image3</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="_onSave" swapped="no"/>
+                        <signal name="activate" handler="_onSave"/>
                       </object>
                     </child>
                     <child>
@@ -57,7 +58,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image4</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="_onSaveAs" swapped="no"/>
+                        <signal name="activate" handler="_onSaveAs"/>
                       </object>
                     </child>
                     <child>
@@ -72,7 +73,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image5</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="_onSalir" swapped="no"/>
+                        <signal name="activate" handler="_onSalir"/>
                       </object>
                     </child>
                   </object>
@@ -95,7 +96,7 @@
                 <property name="label" translatable="yes">Nueva</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-new</property>
-                <signal name="clicked" handler="_onNew" swapped="no"/>
+                <signal name="clicked" handler="_onNew"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -108,7 +109,7 @@
                 <property name="label" translatable="yes">Abrir</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-open</property>
-                <signal name="clicked" handler="_onOpen" swapped="no"/>
+                <signal name="clicked" handler="_onOpen"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -122,7 +123,7 @@
                 <property name="label" translatable="yes">Guardar</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-save</property>
-                <signal name="clicked" handler="_onSave" swapped="no"/>
+                <signal name="clicked" handler="_onSave"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -144,7 +145,7 @@
                 <property name="label" translatable="yes">Agregar</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-add</property>
-                <signal name="clicked" handler="_onAgregar" swapped="no"/>
+                <signal name="clicked" handler="_onAgregar"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -157,7 +158,7 @@
                 <property name="label" translatable="yes">Quitar</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-remove</property>
-                <signal name="clicked" handler="_onQuitar" swapped="no"/>
+                <signal name="clicked" handler="_onQuitar"/>
               </object>
               <packing>
                 <property name="expand">False</property>

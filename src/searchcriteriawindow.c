@@ -2,25 +2,29 @@
 
 static GtkWidget *window = NULL;
 
-void
-_toggle(GtkWidget *wid, gpointer data)
-{
-	gtk_widget_set_visible(GTK_WIDGET(data),
-	                       !gtk_widget_get_visible (GTK_WIDGET(data)));
-}
+/* For testing propose use the local (not installed) ui file */
+/* #define UI_FILE PACKAGE_DATA_DIR"/pmdn_dds/ui/searchcriteria.ui" */
+#define UI_FILE "src/searchcriteria.ui"
 
 GtkWidget*
 search_criteria_window_new()
 {
 	/** TODO: DECLS **/
 
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title(GTK_WINDOW(window), "Criterios de Búsqueda");
-	gtk_window_set_default_size(GTK_WINDOW(window), 640, 480);
-	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+	GtkBuilder *builder;
+	GError* error = NULL;
 
-	
+	builder = gtk_builder_new ();
+	if (!gtk_builder_add_from_file (builder, UI_FILE, &error))
+	{
+		g_warning ("No se pudo cargar el archivo de builder: %s", error->message);
+		g_error_free (error);
+	}
+
+	window = GTK_WIDGET (gtk_builder_get_object (builder, "window"));
+
+	/* This is important */
+	g_object_unref (builder);
 
 	return window;
 }

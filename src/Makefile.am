@@ -4,7 +4,8 @@
 
 uidir = $(datadir)/pmdn_dds/ui
 ui_DATA = pmdn_dds.ui \
-	netlistwin.ui
+	netlistwin.ui\
+	searchcriteria.ui
 
 AM_CPPFLAGS = \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
